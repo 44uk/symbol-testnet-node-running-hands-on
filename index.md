@@ -6,6 +6,7 @@ marp: true
 # Symbol TESTNET ノード構築ハンズオン
 
 Date: 2020/11/14
+Updated: 2021/02/25
 
 ![60% bg right](./index/oshiro.png)
 
@@ -31,9 +32,11 @@ Date: 2020/11/14
 
 ハンズオン資料はこのリポジトリにて公開します。
 
-- [Symbolテストネットノードを建ててみた \(v0\.10\.x Hippo on Ubuntu Server 18\.04\)](https://nemlog.nem.social/blog/49345)
+- [Symbolテストネットノードを建ててみた 最終章 \(v0\.10\.7 Hippo on Ubuntu Server 20\.04\)](https://nemlog.nem.social/blog/52819)
 
-基本的にはすでに公開済みのこちらの記事と同じです。
+基本的にはすでに公開済みのこちらの記事がベースになっています。
+
+ハンズオンでは時間の都合上、多少ボリュームを削っていますので、こちらの記事も是非参考にしてみてください。
 
 ---
 
@@ -137,9 +140,9 @@ foo bar <- ターミナルに表示される結果
 
 ```shell
 # node -v
-v14.15.0
+v14.16.0
 # npm -v
-6.14.8
+7.5.6
 ```
 バージョンを表示して、インストールを確認します。
 
@@ -149,13 +152,13 @@ v14.15.0
 ### Symbol Bootstrap をインストール
 
 ```shell
-# npm install -g symbol-bootstrap@0.2.0
+# npm install -g symbol-bootstrap@latest
 ```
 `symbol-bootstrap`をインストールします。
 
 ```shell
 # symbol-bootstrap -v
-symbol-bootstrap@0.2.0 linux-x64 node-v14.15.0
+symbol-bootstrap/0.4.3 linux-x64 node-v14.16.0
 ```
 バージョンを表示して、インストールを確認します。
 
@@ -172,16 +175,16 @@ symbol-bootstrap@0.2.0 linux-x64 node-v14.15.0
 ```
 
 ```shell
-# curl -L https://github.com/docker/compose/releases/download/1.27.4/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
+# curl -L https://github.com/docker/compose/releases/download/1.28.4/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
 # chmod +x /usr/local/bin/docker-compose
 ```
 `docker`と`docker-compose`をインストールします。
 
 ```shell
 # docker -v
-Docker version 19.03.13, build 4484c46d9d
+Docker version 20.10.3, build 48d30b5
 # docker-compose -v
-docker-compose version 1.27.4, build 40524192
+docker-compose version 1.28.4, build cabd5cfb
 ```
 バージョンを表示して、インストールを確認します。
 
@@ -221,17 +224,11 @@ docker-compose version 1.27.4, build 40524192
 nodes:
     -
         friendlyName: __YOUR_FRIENDLY_NAME__
-gateways:
-    -
-        throttlingBurst: 70
-        throttlingRate: 40
 ```
 
-これらはデフォルトの設定を上書きするための値です。
+これはデフォルトの設定を上書きするための値です。
 
 `friendlyName`: ノードに任意の名前をつけるための文字列
-`throttlingBurst`: APIの同時接続数上限(デフォルト: 35)
-`throttlingRate`: APIの秒間リクエスト数上限(デフォルト: 20)
 
 ---
 
@@ -242,10 +239,6 @@ cat << _EOS_ >> my-preset.yml
 nodes:
     -
         friendlyName: __YOUR_FRIENDLY_NAME__
-gateways:
-    -
-        throttlingBurst: 70
-        throttlingRate: 40
 _EOS_
 ```
 
@@ -286,18 +279,6 @@ addresses.yml gateways/ nemesis/ nodes/ preset.yml
 # ls target/docker
 docker-compose.yml mongo/ server/
 ```
-
----
-
-#### バグ回避
-
-```shell
-# sed -i.bak '/set -e/d' target/docker/mongo/mongors.sh
-```
-
-- DB の初期化に問題があるようで、修正することで回避できるようです。
-- `v0.2.0`以降でスクリプトの構成が変化していますが、まだ不安定のようです。
-- 将来的には必要ない作業です。
 
 ---
 
@@ -377,8 +358,9 @@ After=docker.service
 Type=simple
 WorkingDirectory=/opt/symbol-bootstrap
 ExecStartPre=/usr/bin/symbol-bootstrap stop
-ExecStartPre=-/bin/rm target/nodes/api-node/data/server.lock
 ExecStartPre=-/bin/rm target/nodes/api-node/data/broker.lock
+ExecStartPre=-/bin/rm target/nodes/api-node/data/recovery.lock
+ExecStartPre=-/bin/rm target/nodes/api-node/data/server.lock
 ExecStart=/usr/bin/symbol-bootstrap run
 ExecStop=/usr/bin/symbol-bootstrap stop
 TimeoutStartSec=180
@@ -405,8 +387,9 @@ After=docker.service
 Type=simple
 WorkingDirectory=/opt/symbol-bootstrap
 ExecStartPre=/usr/bin/symbol-bootstrap stop
-ExecStartPre=-/bin/rm target/nodes/api-node/data/server.lock
 ExecStartPre=-/bin/rm target/nodes/api-node/data/broker.lock
+ExecStartPre=-/bin/rm target/nodes/api-node/data/recovery.lock
+ExecStartPre=-/bin/rm target/nodes/api-node/data/server.lock
 ExecStart=/usr/bin/symbol-bootstrap run
 ExecStop=/usr/bin/symbol-bootstrap stop
 TimeoutStartSec=180
